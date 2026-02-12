@@ -1,1 +1,218 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BNPL Bike Shop</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: sans-serif;
+            background-color: #fff;
+        }
 
+        body.no-scroll {
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        header {
+            background: #000;
+            color: #fff;
+            text-align: center;
+            padding: 20px 0;
+            font-weight: bold;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            transition: filter 0.5s ease;
+        }
+
+        .container {
+            padding: 80px 20px 20px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .bike-card {
+            background: #fff;
+            border-radius: 20px;
+            height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            border: 1px solid #f0f0f0;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .bike-card img {
+            max-height: 80%;
+            max-width: 90%;
+            object-fit: contain;
+            pointer-events: none;
+            transition: transform 0.6s ease;
+        }
+
+        #ui-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            display: none;
+            z-index: 50;
+        }
+
+        .btn-continue {
+            background: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 15px;
+            padding: 20px 0;
+            width: 85%;
+            font-weight: 800;
+            font-size: 1.1rem;
+            position: absolute;
+            bottom: 40px;
+            left: 7.5%;
+            transition: all 0.5s ease;
+            z-index: 60;
+        }
+
+        .moving {
+            position: fixed !important;
+            z-index: 500 !important;
+            margin: 0 !important;
+        }
+
+        .blurred {
+            filter: blur(15px);
+            opacity: 0.4;
+        }
+
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            z-index: 1000;
+            animation: explode 4s ease-out forwards;
+        }
+
+        @keyframes explode {
+            0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+            100% { transform: translate(var(--x), var(--y)) rotate(1000deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<header id="main-header">Buy Now Pay Later</header>
+
+<div class="container" id="bike-list">
+    <div class="bike-card" onclick="selectBike(this)"><img src="bike1.png" alt="Rower 1"></div>
+    <div class="bike-card" onclick="selectBike(this)"><img src="bike2.png" alt="Rower 2"></div>
+    <div class="bike-card" onclick="selectBike(this)"><img src="bike3.png" alt="Rower 3"></div>
+    <div class="bike-card" onclick="selectBike(this)"><img src="bike4.png" alt="Rower 4"></div>
+    <div class="bike-card" onclick="selectBike(this)"><img src="bike5.png" alt="Rower 5"></div>
+    <div class="bike-card" onclick="selectBike(this)"><img src="bike6.png" alt="Rower 6"></div>
+</div>
+
+<div id="ui-overlay">
+    <button class="btn-continue" id="bnpl-button" onclick="startFinalAnimation()">
+        CONTINUE WITH<br>B N P L
+    </button>
+</div>
+
+<script>
+    let activeBike = null;
+
+    function selectBike(element) {
+        if (activeBike) return;
+        activeBike = element;
+        const rect = element.getBoundingClientRect();
+
+        document.body.classList.add('no-scroll');
+
+        element.style.width = rect.width + 'px';
+        element.style.height = rect.height + 'px';
+        element.style.left = rect.left + 'px';
+        element.style.top = rect.top + 'px';
+        element.classList.add('moving');
+
+        const allCards = document.querySelectorAll('.bike-card');
+        allCards.forEach(card => {
+            if (card !== element) card.style.display = 'none';
+        });
+
+        setTimeout(() => {
+            element.style.top = '85px';
+            element.style.left = '5%';
+            element.style.width = '90%';
+            element.style.height = '250px';
+        }, 50);
+
+        document.getElementById('ui-overlay').style.display = 'block';
+    }
+
+    function startFinalAnimation() {
+        const header = document.getElementById('main-header');
+        const button = document.getElementById('bnpl-button');
+
+        // Blur tła
+        header.classList.add('blurred');
+        button.classList.add('blurred');
+        button.style.pointerEvents = 'none';
+
+        // Środek ekranu
+        const centerX = (window.innerWidth / 2) - (activeBike.offsetWidth / 2);
+        const centerY = (window.innerHeight / 2) - (activeBike.offsetHeight / 2);
+
+        // --- KLUCZOWA ZMIANA ---
+        // Usuwamy tło, cień i obramowanie prostokąta, zostaje sam obrazek
+        activeBike.style.background = 'transparent';
+        activeBike.style.boxShadow = 'none';
+        activeBike.style.border = 'none';
+        // -----------------------
+
+        activeBike.style.left = centerX + 'px';
+        activeBike.style.top = centerY + 'px';
+        activeBike.style.transform = 'scale(1.3)'; // Lekkie powiększenie samego roweru
+
+        setTimeout(() => {
+            launchConfetti();
+        }, 600);
+    }
+
+    function launchConfetti() {
+        const rect = activeBike.getBoundingClientRect();
+        const startX = rect.left + rect.width / 2;
+        const startY = rect.top + rect.height / 2;
+
+        for (let i = 0; i < 80; i++) {
+            const c = document.createElement("div");
+            c.className = "confetti";
+            c.style.background = `hsl(${Math.random() * 360}, 100%, 50%)`;
+            c.style.left = startX + "px";
+            c.style.top = startY + "px";
+
+            const dist = 150 + Math.random() * 300;
+            const angle = Math.random() * Math.PI * 2;
+
+            c.style.setProperty("--x", `${Math.cos(angle) * dist}px`);
+            c.style.setProperty("--y", `${Math.sin(angle) * dist}px`);
+
+            document.body.appendChild(c);
+            setTimeout(() => c.remove(), 4000);
+        }
+    }
+</script>
+
+</body>
+</html>
